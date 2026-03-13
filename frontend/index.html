@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kadak Junction — POS System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN SCREEN ═══════════════════ -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-bg-art">
+    <div class="tea-ring r1"></div>
+    <div class="tea-ring r2"></div>
+    <div class="tea-ring r3"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="logo-icon">☕</span>
+      <h1>KADAK<br><span>JUNCTION</span></h1>
+    </div>
+    <p class="login-tagline">Staff Portal — v2.0</p>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="Enter username" autocomplete="username" />
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="loginRole">
+        <option value="">— Select Role —</option>
+        <option value="Manager">Manager</option>
+        <option value="Cashier">Cashier</option>
+        <option value="Waiter">Waiter</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="password-wrap">
+        <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password" />
+        <button type="button" class="toggle-pwd" onclick="togglePassword()">👁</button>
+      </div>
+    </div>
+    <button class="btn-login" onclick="login()">Login →</button>
+    <div id="loginError" class="login-error hidden"></div>
+    <div class="login-hint">
+      <small>Demo: manager / Manager / manager123</small>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div id="mainApp" class="hidden">
+
+  <!-- TOP HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span>☕</span>
+      <div>
+        <h2>KADAK JUNCTION</h2>
+        <small id="currentDate"></small>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn active" data-tab="billing" onclick="switchTab('billing',this)">🧾 Billing</button>
+      <button class="nav-btn" data-tab="kitchen" onclick="switchTab('kitchen',this)">🍳 Kitchen</button>
+      <button class="nav-btn manager-only" data-tab="dashboard" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+      <button class="nav-btn manager-only" data-tab="inventory" onclick="switchTab('inventory',this)">📦 Inventory</button>
+      <button class="nav-btn manager-only" data-tab="reports" onclick="switchTab('reports',this)">📈 Reports</button>
+      <button class="nav-btn manager-only" data-tab="staff" onclick="switchTab('staff',this)">👥 Staff</button>
+    </nav>
+    <div class="header-user">
+      <div class="user-info">
+        <span id="headerUserName">—</span>
+        <span class="role-badge" id="headerRole">—</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- ── TAB: BILLING ── -->
+  <div id="tab-billing" class="tab-panel active">
+    <div class="billing-layout">
+
+      <!-- Tables Panel -->
+      <aside class="tables-panel">
+        <div class="panel-title">🪑 Tables</div>
+        <div id="tablesGrid" class="tables-grid"></div>
+        <div class="table-legend">
+          <span class="legend-dot available"></span> Available
+          <span class="legend-dot occupied"></span> Occupied
+        </div>
+      </aside>
+
+      <!-- Menu Panel -->
+      <main class="menu-panel">
+        <div class="panel-title">
+          📋 Menu
+          <div class="menu-search-wrap">
+            <input type="text" id="menuSearch" placeholder="Search items..." oninput="filterMenu(this.value)" />
+          </div>
+        </div>
+        <div id="menuContainer" class="menu-container"></div>
+      </main>
+
+      <!-- Bill Panel -->
+      <aside class="bill-panel">
+        <div class="panel-title">
+          🧾 Bill — <span id="currentTableLabel">No table selected</span>
+        </div>
+
+        <!-- Customer Details -->
+        <div class="customer-section">
+          <input type="text" id="customerName" placeholder="Customer name (optional)" />
+          <input type="tel" id="customerPhone" placeholder="Phone (optional)" />
+        </div>
+
+        <!-- Order Items -->
+        <div id="billItems" class="bill-items-list">
+          <div class="bill-empty">Select a table and add items</div>
+        </div>
+
+        <!-- Bill Summary -->
+        <div class="bill-summary">
+          <div class="summary-row">
+            <span>Subtotal</span><span id="billSubtotal">₹0</span>
+          </div>
+          <div class="summary-row gst-row" id="gstRow">
+            <span>GST (18%)</span><span id="billGst">₹0</span>
+          </div>
+          <div class="summary-row total-row">
+            <span>TOTAL</span><span id="billTotal">₹0</span>
+          </div>
+          <label class="gst-toggle">
+            <input type="checkbox" id="gstEnabled" onchange="recalcBill()" />
+            Include GST (18%)
+          </label>
+        </div>
+
+        <!-- Payment Section -->
+        <div class="payment-section">
+          <div class="payment-label">Payment Method</div>
+          <div class="payment-methods">
+            <label class="pay-method active">
+              <input type="radio" name="payMethod" value="cash" checked /> 💵 Cash
+            </label>
+            <label class="pay-method">
+              <input type="radio" name="payMethod" value="upi" /> 📱 UPI
+            </label>
+            <label class="pay-method">
+              <input type="radio" name="payMethod" value="card" /> 💳 Card
+            </label>
+          </div>
+        </div>
+
+        <div class="bill-actions">
+          <button class="btn-checkout" onclick="checkout()">🖨️ Print & Checkout</button>
+          <button class="btn-clear-table" onclick="clearTable()">🗑 Clear Table</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ── TAB: KITCHEN (KOT) ── -->
+  <div id="tab-kitchen" class="tab-panel hidden">
+    <div class="kitchen-header">
+      <h2>🍳 Kitchen Order Tickets</h2>
+      <button class="btn-refresh" onclick="loadKitchen()">⟳ Refresh</button>
+      <span class="auto-refresh-label">Auto-refreshes every 15s</span>
+    </div>
+    <div id="kotGrid" class="kot-grid">
+      <div class="empty-state">No active orders right now</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: DASHBOARD ── -->
+  <div id="tab-dashboard" class="tab-panel hidden">
+    <div class="dashboard-grid">
+
+      <!-- Stat Cards -->
+      <div class="stat-card accent-orange">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" id="statTodayRevenue">₹0</div>
+        <div class="stat-label">Today's Revenue</div>
+      </div>
+      <div class="stat-card accent-blue">
+        <div class="stat-icon">📋</div>
+        <div class="stat-value" id="statTodayOrders">0</div>
+        <div class="stat-label">Today's Orders</div>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value" id="statMonthRevenue">₹0</div>
+        <div class="stat-label">Monthly Revenue</div>
+      </div>
+      <div class="stat-card accent-purple">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value" id="statAvgOrder">₹0</div>
+        <div class="stat-label">Avg Order Value</div>
+      </div>
+      <div class="stat-card accent-red">
+        <div class="stat-icon">🪑</div>
+        <div class="stat-value" id="statActiveTables">0</div>
+        <div class="stat-label">Active Tables</div>
+      </div>
+      <div class="stat-card accent-teal">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-value" id="statLowStock">0</div>
+        <div class="stat-label">Low Stock Alerts</div>
+      </div>
+
+      <!-- Revenue Chart -->
+      <div class="chart-card wide">
+        <div class="chart-title">📈 Revenue — Last 7 Days</div>
+        <canvas id="revenueChart" height="80"></canvas>
+      </div>
+
+      <!-- Top Items + Category Split -->
+      <div class="chart-card">
+        <div class="chart-title">🏆 Top Items Today</div>
+        <div id="topItemsList" class="top-items-list"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🍩 Category Split</div>
+        <canvas id="categoryChart" height="160"></canvas>
+      </div>
+
+      <!-- Hourly heatmap -->
+      <div class="chart-card wide">
+        <div class="chart-title">⏰ Hourly Orders Today</div>
+        <canvas id="hourlyChart" height="70"></canvas>
+      </div>
+
+      <!-- Payment Methods -->
+      <div class="chart-card">
+        <div class="chart-title">💳 Payment Methods</div>
+        <canvas id="paymentChart" height="160"></canvas>
+      </div>
+
+      <!-- Low Stock Alerts -->
+      <div class="chart-card">
+        <div class="chart-title">⚠️ Low Stock Alerts</div>
+        <div id="lowStockList" class="low-stock-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── TAB: INVENTORY ── -->
+  <div id="tab-inventory" class="tab-panel hidden">
+    <div class="inventory-toolbar">
+      <h2>📦 Inventory Management</h2>
+      <div class="inventory-actions">
+        <input type="text" id="inventorySearch" placeholder="Search items..." oninput="filterInventory(this.value)" />
+        <button class="btn-primary" onclick="openAddItemModal()">+ Add Item</button>
+        <button class="btn-secondary" onclick="exportInventoryCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div id="inventoryGrid" class="inventory-grid"></div>
+  </div>
+
+  <!-- ── TAB: REPORTS ── -->
+  <div id="tab-reports" class="tab-panel hidden">
+    <div class="reports-layout">
+      <div class="report-controls">
+        <h2>📊 Reports</h2>
+        <div class="report-filters">
+          <label>From: <input type="date" id="reportFrom" /></label>
+          <label>To: <input type="date" id="reportTo" /></label>
+          <button class="btn-primary" onclick="loadReport()">Generate</button>
+        </div>
+        <div class="export-buttons">
+          <button class="btn-export" onclick="exportReport('daily')">📅 Daily CSV</button>
+          <button class="btn-export" onclick="exportReport('monthly')">📈 Monthly CSV</button>
+          <button class="btn-export" onclick="exportReport('all')">💾 All Data CSV</button>
+        </div>
+      </div>
+      <div id="reportTable" class="report-table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: STAFF ── -->
+  <div id="tab-staff" class="tab-panel hidden">
+    <div class="staff-toolbar">
+      <h2>👥 Staff Management</h2>
+      <button class="btn-primary" onclick="openAddStaffModal()">+ Add Staff</button>
+    </div>
+    <div id="staffGrid" class="staff-grid"></div>
+  </div>
+
+</div><!-- end mainApp -->
+
+<!-- ═══════════════════ RECEIPT MODAL ═══════════════════ -->
+<div id="receiptModal" class="modal-overlay hidden">
+  <div class="receipt-card" id="receiptContent">
+    <div class="receipt-header">
+      <div class="receipt-logo">☕ KADAK JUNCTION</div>
+      <div class="receipt-sub">Your Perfect Tea & Snacks Destination</div>
+      <div class="receipt-meta">
+        <span>Bill No: <strong id="rBillNo">—</strong></span>
+        <span>Date: <strong id="rDate">—</strong></span>
+        <span>Time: <strong id="rTime">—</strong></span>
+        <span>Table: <strong id="rTable">—</strong></span>
+        <span>Staff: <strong id="rStaff">—</strong></span>
+      </div>
+      <div id="rCustomer" class="receipt-customer hidden"></div>
+    </div>
+    <div class="receipt-divider">- - - - - - - - - - - - - - - -</div>
+    <div id="rItems" class="receipt-items"></div>
+    <div class="receipt-divider">- - - - - - - - - - - - - - - -</div>
+    <div id="rSummary" class="receipt-summary"></div>
+    <div class="receipt-total">TOTAL: ₹<span id="rTotal">0</span></div>
+    <div class="receipt-payment">Payment: <span id="rPayment">Cash</span></div>
+    <div class="receipt-divider">- - - - - - - - - - - - - - - -</div>
+    <div class="receipt-footer">Thank you for visiting! Come again ☕</div>
+  </div>
+  <div class="receipt-modal-actions no-print">
+    <button onclick="printReceipt()">🖨️ Print</button>
+    <button onclick="closeReceipt()">✕ Close</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADD ITEM MODAL ═══════════════════ -->
+<div id="addItemModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>Add Menu Item</h3>
+    <div class="form-group"><label>Name</label><input type="text" id="newItemName" /></div>
+    <div class="form-group"><label>Price (₹)</label><input type="number" id="newItemPrice" min="1" /></div>
+    <div class="form-group"><label>Category</label>
+      <select id="newItemCategory">
+        <option>Beverages</option><option>Snacks</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Initial Stock</label><input type="number" id="newItemStock" value="50" min="0" /></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="addMenuItem()">Add Item</button>
+      <button class="btn-secondary" onclick="closeModal('addItemModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADD STAFF MODAL ═══════════════════ -->
+<div id="addStaffModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>Add Staff Member</h3>
+    <div class="form-group"><label>Full Name</label><input type="text" id="newStaffName" /></div>
+    <div class="form-group"><label>Username</label><input type="text" id="newStaffUsername" /></div>
+    <div class="form-group"><label>Password</label><input type="password" id="newStaffPassword" /></div>
+    <div class="form-group"><label>Role</label>
+      <select id="newStaffRole">
+        <option>Waiter</option><option>Cashier</option><option>Manager</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="addStaff()">Add Staff</button>
+      <button class="btn-secondary" onclick="closeModal('addStaffModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPI QR Modal -->
+<div id="upiModal" class="modal-overlay hidden">
+  <div class="modal-card upi-card">
+    <h3>📱 UPI Payment</h3>
+    <div class="upi-amount">Amount: ₹<span id="upiAmount">0</span></div>
+    <div class="upi-qr">
+      <div class="qr-placeholder">
+  <img src="qr.png" alt="UPI QR" style="width:180px;height:180px;border-radius:8px;" />
+  <p>Scan with any UPI app</p>
+  <strong>kadakchai@upi</strong>
+</div>
+      <!-- <div class="qr-placeholder">
+        <div class="qr-grid"></div>
+        <p>Scan with any UPI app</p>
+        <strong>kadakjunction@upi</strong>
+      </div> -->
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="confirmUpiPayment()">✅ Payment Received</button>
+      <button class="btn-secondary" onclick="closeModal('upiModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
